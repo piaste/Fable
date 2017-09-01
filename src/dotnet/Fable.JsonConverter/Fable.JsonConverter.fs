@@ -117,6 +117,12 @@ type JsonConverter() =
         FSharpType.GetUnionCases(t)
         |> Array.find (fun uci -> uci.Name = name)
 
+    /// Sets a whitelist for the kind of types to be converted    
+    member val Include : Kind list = [] with get, set
+    
+    /// Sets a blacklist for the kind of types to be converted
+    member val Exclude : Kind list = [] with get, set
+    
     override x.CanConvert(t) =
         let kind =
             jsonConverterTypes.GetOrAdd(t, fun t ->
@@ -138,7 +144,9 @@ type JsonConverter() =
                 then
                     Kind.MapOrDictWithNonStringKey
                 else Kind.Other)
-        kind <> Kind.Other
+        kind <> Kind.Other &&
+        (List.isEmpty x.Include || List.contains kind x.Include) &&
+        (List.isEmpty x.Exclude || (not <| List.contains kind x.Exclude))
 
     override x.WriteJson(writer, value, serializer) =
         if isNull value
